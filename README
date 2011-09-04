@@ -1,0 +1,10 @@
+Currently implemented:
+    Naive search algorithm;
+    Knuth-Morris-Pratt (KMP) algorithm;
+    Boyer-Moore-Horspool (BMH) algorithm;
+    Bitap (Shift-And) algorithm;
+
+Parameters and return values are the same as strstr() from string.h allowing simple drop in replacement.
+
+Main program meant to solve:
+    https://br.spoj.pl/problems/PLAGIO/
