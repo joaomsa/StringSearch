@@ -1,6 +1,8 @@
-#include <string.h>
 #include <stdlib.h>
+#include <limits.h>
+
 #include <stdio.h>
+#include <string.h>
 
 /* strstr() using brute force search. */
 char *strstr_bf(char *haystack, char *needle);
@@ -49,12 +51,35 @@ char *strstr_kmp(char *haystack, char *needle)
 }
 
 /* strstr() using Boyer-Moore-Horspool algorithm. */
-char *strstr_bmh(char *haystack, char *needle);
+char *strstr_bmh(char *haystack, char *needle){
+    int needleLen, haystackLen, bcTable[UCHAR_MAX + 1], i;
+
+    needleLen = strlen(needle);
+    haystackLen = strlen(haystack);
+
+    /* Initialize bad char shift table and populate with analysis of needle. */
+    for (i = 0; i < UCHAR_MAX + 1; i++)
+        bcTable[i] = needleLen;
+    for (i = 0; i < needleLen - 1; i++) 
+        bcTable[(unsigned char)needle[i]] = needleLen - 1 - i;
+
+    while (haystackLen >= needleLen){
+        for (i = needleLen - 1; needle[i] == haystack[i]; i--)
+            if (i == 0)
+                return haystack;
+
+        haystackLen -= bcTable[(unsigned char)haystack[needleLen - 1]];
+        haystack += bcTable[(unsigned char)haystack[needleLen - 1]];
+    }
+
+    return NULL;
+}
 
 /* strstr() using bitap (shift-and) algorithm. */
 char *strstr_bitap(char *haystack, char *needle);
 
-int main(){
+int main()
+{
     int i, c;
     char *ptr, haystack[1000], needle[1000];
     for (i = 0; (c = getchar()) != '\n'; i++)
@@ -74,6 +99,13 @@ int main(){
 
     ptr = strstr_kmp(haystack, needle);
     printf("strstr_kmp = ");
+    if (ptr == NULL)
+        printf("NULL\n");
+    else
+        printf("%lu\n", ptr - haystack);
+
+    ptr = strstr_bmh(haystack, needle);
+    printf("strstr_bmh = ");
     if (ptr == NULL)
         printf("NULL\n");
     else
