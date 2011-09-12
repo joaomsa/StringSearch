@@ -1,19 +1,22 @@
 CC=gcc
-CFLAGS=-O0
+CFLAGS=-Wall -Wextra -ansi -g -O3
 EXECUTABLE=tp1
 
 all: $(EXECUTABLE)
 
-$(EXECUTABLE): main.o
-	$(CC) -o $@ main.o
+$(EXECUTABLE): main.o strstr.o
+	$(CC) -o $@ main.o strstr.o
 
 main.o: main.c
 	$(CC) $(CFLAGS) -c -o $@ main.c
 
+strstr.o: strstr.c
+	$(CC) $(CFLAGS) -c -o $@ strstr.c
+
 clean:
-	rm main.o $(EXECUTABLE)
+	rm main.o strstr.o $(EXECUTABLE)
 
 run:
-	./$(EXECUTABLE) < test
+	./$(EXECUTABLE) test 5
 
 .PHONY: clean run

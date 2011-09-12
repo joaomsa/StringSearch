@@ -1,13 +1,25 @@
+/* Joao Paulo Mendes de Sa */
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#ifndef STRSTR_H
+#define STRSTR_H
+#include "strstr.h"
+#endif
 
-void music_read(int notesLen, char *notes)
+/* Check whether memory allocation fails. */
+#define CHKMLC(x) \
+    if ((x) == NULL){ \
+        fprintf(stderr, "Malloc Failed\n"); \
+        abort();}
+
+/* Read notes from input. */
+void music_read(FILE *input, int notesLen, char *notes)
 {
     int i, c;
 
-    for (i = 0; isgraph(c = getchar()) || i < notesLen; ){
+    for (i = 0; isgraph(c = getc(input)) || i < notesLen; ){
         switch (c){
             case 'A':
                 notes[i] = 0;
@@ -44,6 +56,7 @@ void music_read(int notesLen, char *notes)
     }
 }
 
+/* Calculate pairwise pitch difference. */
 void music_pitch_diff(int *notesLen, char *notes)
 {
     int i;
@@ -58,60 +71,54 @@ void music_pitch_diff(int *notesLen, char *notes)
     notes[*notesLen] = '\0';
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     int needleLen, haystackLen;
-    char *needle, *haystack;
+    char *needle, *haystack, *ptr;
+    FILE *input;
+    if (argc < 3){
+        fprintf(stderr, "Missing paramerter\n");
+        abort();
+    }
+    input = fopen(argv[1], "r");
 
     while (1){
-        scanf("%i %i", &haystackLen, &needleLen);
+        if (fscanf(input, "%i %i", &haystackLen, &needleLen) != 2){
+            fprintf(stderr, "Missing note length\n");
+            abort();
+        }
 
         if (needleLen == 0 || haystackLen == 0)
             break;
 
-        needle = malloc(sizeof(char) * needleLen);
-        haystack = malloc(sizeof(char) * haystackLen);
+        CHKMLC(needle = malloc(sizeof(char) * needleLen));
+        CHKMLC(haystack = malloc(sizeof(char) * haystackLen));
 
-        music_read(haystackLen, haystack);
-        music_read(needleLen, needle);
-
-#ifdef DEBUG
-        int i;
-        for (i = 0; i < haystackLen; i++)
-            printf("%i ", haystack[i]);
-        puts("");
-
-        for (i = 0; i < needleLen; i++)
-            printf("%i ", needle[i]);
-        puts("");
-        puts("Diff");
-#endif
+        music_read(input, haystackLen, haystack);
+        music_read(input, needleLen, needle);
 
         music_pitch_diff(&haystackLen, haystack);
         music_pitch_diff(&needleLen, needle);
 
-#ifdef DEBUG
-        for (i = 0; i < haystackLen; i++)
-            printf("%c ", haystack[i]);
-        puts("");
+        switch(argv[2][0] - '0'){
+            case 1: ptr = strstr_bf(haystack, needle);
+                    break;
+            case 2: ptr = strstr_kmp(haystack, needle);
+                    break;
+            case 3: ptr = strstr_bmh(haystack, needle);
+                    break;
+            case 4: ptr = strstr_bitap(haystack, needle);
+                    break;
+            default: ptr = strstr(haystack, needle);
+        }
 
-        for (i = 0; i < needleLen; i++)
-            printf("%c ", needle[i]);
-        puts("");
-#endif
-
-        char *ptr;
-        ptr = strstr(haystack, needle);
         if (ptr != NULL)
-#ifdef DEBUG
             printf("S %li\n", ptr - haystack);
-#endif
-            printf("S\n");
         else
             printf("N\n");
 
         free(needle);
         free(haystack);
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

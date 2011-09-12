@@ -1,18 +1,46 @@
+/* Joao Paulo Mendes de Sa */
 #include <stdlib.h>
-#include <limits.h>
-
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
+#include <limits.h>
+#ifndef STRSTR_H
+#define STRSTR_H
+#include "strstr.h"
+#endif
 
-/* strstr() using brute force search. */
-char *strstr_bf(char *haystack, char *needle);
+/* Check whether memory allocation fails. */
+#define CHKMLC(x) \
+    if ((x) == NULL){ \
+        fprintf(stderr, "Malloc Failed\n"); \
+        abort();}
 
-/* strstr() using Knuth-Morris-Pratt algorithm. */
+char *strstr_bf(char *haystack, char *needle)
+{
+    int pos, shift;
+
+    /* Sanity check. */
+    if (needle[0] == '\0')
+        return haystack;
+
+    for (shift = 0; haystack[shift] != '\0'; shift++)
+        for (pos = 0; haystack[pos + shift] == needle[pos]; pos++)
+            if (needle[pos + 1] == '\0')
+                return haystack + shift;
+
+    return NULL;
+}
+
 char *strstr_kmp(char *haystack, char *needle)
 {
     int *matchTable, pos, cnd, shift;
 
-    matchTable = malloc(sizeof(int) * strlen(needle));
+    /* Sanity check. */
+    if (needle[0] == '\0')
+        return haystack;
+    if (haystack[0] == '\0')
+        return NULL;
+
+    CHKMLC(matchTable = malloc(sizeof(int) * strlen(needle)));
     /* Build partial match table for string needle. */
     pos = 2; /* Current postion of matchTable being computed. */
     cnd = 0; /* Last character of prefix candidate for current substring. */
@@ -50,12 +78,16 @@ char *strstr_kmp(char *haystack, char *needle)
         return NULL;
 }
 
-/* strstr() using Boyer-Moore-Horspool algorithm. */
-char *strstr_bmh(char *haystack, char *needle){
+char *strstr_bmh(char *haystack, char *needle)
+{
     int needleLen, haystackLen, bcTable[UCHAR_MAX + 1], i;
 
     needleLen = strlen(needle);
     haystackLen = strlen(haystack);
+
+    /* Sanity check. */
+    if (needle[0] == '\0')
+        return haystack;
 
     /* Initialize bad char shift table and populate with analysis of needle. */
     for (i = 0; i < UCHAR_MAX + 1; i++)
@@ -64,51 +96,52 @@ char *strstr_bmh(char *haystack, char *needle){
         bcTable[(unsigned char)needle[i]] = needleLen - 1 - i;
 
     while (haystackLen >= needleLen){
+        /* Match needle to haystack from right to left. */
         for (i = needleLen - 1; needle[i] == haystack[i]; i--)
             if (i == 0)
                 return haystack;
 
+        /* Shift haystack based on bad char shift table. */ 
         haystackLen -= bcTable[(unsigned char)haystack[needleLen - 1]];
         haystack += bcTable[(unsigned char)haystack[needleLen - 1]];
     }
 
+    /* No match. */
     return NULL;
 }
 
-/* strstr() using bitap (shift-and) algorithm. */
-char *strstr_bitap(char *haystack, char *needle);
-
-int main()
+char *strstr_bitap(char *haystack, char *needle)
 {
-    int i, c;
-    char *ptr, haystack[1000], needle[1000];
-    for (i = 0; (c = getchar()) != '\n'; i++)
-        haystack[i] = c;
-    haystack[i] = '\0';
-    for (i = 0; (c = getchar()) != '\n' && c != EOF; i++)
-        needle[i] = c;
-    needle[i] = '\0';
-    printf("%s\n%s\n####\n", haystack, needle);
+    unsigned long long bitArr;
+    unsigned long long needleMask[UCHAR_MAX + 1];
+    int needleLen = strlen(needle), i;
 
-    ptr = strstr(haystack, needle);
-    printf("strstr = ");
-    if (ptr == NULL)
-        printf("NULL\n");
-    else
-        printf("%lu\n", ptr - haystack);
+    /* Sanity check. */
+    if (needle[0] == '\0')
+        return haystack;
 
-    ptr = strstr_kmp(haystack, needle);
-    printf("strstr_kmp = ");
-    if (ptr == NULL)
-        printf("NULL\n");
-    else
-        printf("%lu\n", ptr - haystack);
+    /* Pattern too long. */
+    if (needleLen > 63)
+        return strstr_bmh(haystack, needle);
 
-    ptr = strstr_bmh(haystack, needle);
-    printf("strstr_bmh = ");
-    if (ptr == NULL)
-        printf("NULL\n");
-    else
-        printf("%lu\n", ptr - haystack);
-    return 0;
+    /* Initialize to 1111...0 */
+    bitArr = ~1;
+
+    /* Initialize the needle bitmasks. */
+    for (i = 0; i < UCHAR_MAX + 1; i++)
+        needleMask[i] = ~0;
+    for (i = 0; i < needleLen; ++i)
+        needleMask[(unsigned char)needle[i]] &= ~(1UL << i);
+
+    for (i = 0; haystack[i] != '\0'; i++){
+        /* Update bit array. */
+        bitArr |= needleMask[(unsigned char)haystack[i]];
+        bitArr <<= 1;
+
+        /* If 0 reached end of bitArr then needle found. */
+        if (0 == (bitArr & (1UL << needleLen)))
+            return haystack + i - needleLen + 1;
+    }
+
+    return NULL;
 }
