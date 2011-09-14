@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 
     while (1){
         if (fscanf(input, "%i %i", &haystackLen, &needleLen) != 2){
-            fprintf(stderr, "Missing note length\n");
+            fprintf(stderr, "Missing number of notes\n");
             abort();
         }
 
